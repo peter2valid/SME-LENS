@@ -1,9 +1,22 @@
+"""OCR Service for SMELens
+
+Uses Tesseract OCR to extract text from receipt/invoice images.
+Includes regex-based parsing to extract structured data (vendor, total, date).
+"""
 import re
+import logging
 import pytesseract
 from PIL import Image
 
-# Initialize client (will fail if no creds, so we'll wrap in try/except usage or mock)
-# For now, we assume credentials are set via env var GOOGLE_APPLICATION_CREDENTIALS
+# Configure logger for OCR service
+logger = logging.getLogger(__name__)
+
+# Verify Tesseract is installed (will log warning if not found)
+try:
+    tesseract_version = pytesseract.get_tesseract_version()
+    logger.info(f"Tesseract OCR initialized - version {tesseract_version}")
+except Exception as e:
+    logger.warning(f"Tesseract may not be properly installed: {e}")
 
 def extract_structured_data(text):
     """
@@ -19,11 +32,9 @@ def extract_structured_data(text):
     
     # GROSS/TOTAL Amount Extraction
     # Strategy: Find all dollar amounts, usually the largest one at the bottom is the total.
-    # We ignore small amounts that might be tax or line items if possible, but max() is a good heuristic.
     amounts = re.findall(r'\$?\s?(\d+\.\d{2})', text)
     if amounts:
         try:
-            # Convert to floats
             valid_amounts = [float(a) for a in amounts]
             if valid_amounts:
                 data["total"] = max(valid_amounts)
@@ -32,11 +43,9 @@ def extract_structured_data(text):
             
     # Date Extraction
     # Supports: MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD
-    # We pick the first valid-looking date.
     date_pattern = r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})|(\d{4}[/-]\d{1,2}[/-]\d{1,2})'
     dates = re.findall(date_pattern, text)
     if dates:
-        # re.findall with groups returns tuples, find the non-empty string
         for group in dates:
             for match in group:
                 if match:
@@ -49,14 +58,11 @@ def extract_structured_data(text):
     # Heuristic: The first non-empty line that isn't a date or generic label is often the vendor.
     lines = [line.strip() for line in text.split('\n') if line.strip()]
     
-    # List of generic words to skip if they appear on the first line
     skip_words = ["receipt", "invoice", "total", "date", "payment", "subtotal"]
     
     for line in lines:
-        if len(line) < 3: continue # Skip very short lines
+        if len(line) < 3: continue
         
-        # If line contains digits (like a phone number or date), it might not be the vendor
-        # But some vendors have numbers. Let's just check if it's NOT just a date.
         is_date = re.search(r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}', line)
         if is_date: continue
         
@@ -64,37 +70,64 @@ def extract_structured_data(text):
         if any(word in line_lower for word in skip_words):
             continue
             
-        # Found a candidate
         data["vendor"] = line
         break
         
     return data
 
-def process_image(file_path: str):
+def process_image(file_path: str) -> dict | None:
     """
-    Uses Tesseract OCR to extract text from the image.
-    Returns: full_text, structured_data, confidence
+    Main OCR processing function.
+    
+    Uses Tesseract OCR to extract text from the image, then parses
+    the text to extract structured data (vendor, total, date).
+    
+    Args:
+        file_path: Path to the image file
+        
+    Returns:
+        dict with raw_text, structured_data, and confidence score
+        None if OCR fails completely
     """
+    logger.info(f"OCR: Starting processing for {file_path}")
+    
     try:
         # Load image via Pillow
         image = Image.open(file_path)
+        logger.info(f"OCR: Image loaded successfully - size {image.size}, mode {image.mode}")
         
         # Extract text using Tesseract
         full_text = pytesseract.image_to_string(image)
         
-        # Tesseract doesn't provide a single confidence score easily without more advanced usage (image_to_data)
-        # For simplicity, we'll assume high confidence if we got text, low if empty.
-        confidence = 0.9 if full_text.strip() else 0.0
+        # Get detailed OCR data for confidence calculation
+        try:
+            ocr_data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
+            confidences = [int(c) for c, t in zip(ocr_data['conf'], ocr_data['text']) 
+                          if c != '-1' and t.strip()]
+            confidence = sum(confidences) / len(confidences) / 100 if confidences else 0.0
+        except Exception as conf_err:
+            logger.warning(f"OCR: Could not calculate confidence: {conf_err}")
+            confidence = 0.9 if full_text.strip() else 0.0
 
         if not full_text.strip():
+            logger.warning("OCR: No text extracted from image")
             return {"raw_text": "", "structured_data": {}, "confidence": 0.0}
 
+        # Parse structured data from the raw text
+        structured_data = extract_structured_data(full_text)
+        
+        logger.info(f"OCR: Success - extracted {len(full_text)} chars, confidence {confidence:.2f}")
+        logger.info(f"OCR: Structured data - vendor: {structured_data.get('vendor')}, total: {structured_data.get('total')}")
+        
         return {
             "raw_text": full_text,
-            "structured_data": extract_structured_data(full_text),
-            "confidence": confidence
+            "structured_data": structured_data,
+            "confidence": round(confidence, 2)
         }
+        
+    except FileNotFoundError:
+        logger.error(f"OCR: File not found - {file_path}")
+        return None
     except Exception as e:
-        print(f"OCR Error: {e}")
-        # Return fallback or error
+        logger.error(f"OCR: Processing failed - {type(e).__name__}: {e}")
         return None

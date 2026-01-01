@@ -13,3 +13,5 @@ email-validator
 bcrypt==3.2.2
 pytesseract
 pillow
+scipy
+numpy
