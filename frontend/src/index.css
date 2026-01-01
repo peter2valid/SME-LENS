@@ -1,0 +1,238 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SMELens Theme — Tailwind v4 @theme configuration
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* Colors */
+  --color-background: #0B0F1A;
+  --color-surface: #111827;
+  --color-card: #1F2937;
+  --color-primary: #4F46E5;
+  --color-secondary: #06B6D4;
+  --color-accent: #22C55E;
+  --color-danger: #EF4444;
+  --color-success: #22C55E;
+  --color-text: #E5E7EB;
+  --color-muted: #9CA3AF;
+  --color-border: #1F2933;
+
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Shadows */
+  --shadow-glow-primary: 0 0 20px rgba(79, 70, 229, 0.3);
+  --shadow-glow-secondary: 0 0 20px rgba(6, 182, 212, 0.3);
+  --shadow-glow-accent: 0 0 20px rgba(34, 197, 94, 0.3);
+
+  /* Animations */
+  --animate-scan-line: scan-line 2s ease-in-out infinite;
+  --animate-pulse-border: pulse-border 2s ease-in-out infinite;
+  --animate-success-glow: success-glow 0.6s ease-out forwards;
+  --animate-shimmer: shimmer 1.5s infinite;
+  --animate-shake: shake 0.5s ease-in-out;
+}
+
+/* CSS Variables for JS access and light mode */
+:root {
+  --color-bg: #0B0F1A;
+  --color-surface: #111827;
+  --color-card: #1F2937;
+  --color-primary: #4F46E5;
+  --color-secondary: #06B6D4;
+  --color-accent: #22C55E;
+  --color-text: #E5E7EB;
+  --color-muted: #9CA3AF;
+  --color-border: #1F2933;
+  --shadow-glow-primary: 0 0 20px rgba(79, 70, 229, 0.3);
+  --shadow-glow-secondary: 0 0 20px rgba(6, 182, 212, 0.3);
+  --shadow-glow-accent: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+/* Light mode overrides */
+.theme-light {
+  --color-bg: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-card: #F1F5F9;
+  --color-text: #0F172A;
+  --color-muted: #64748B;
+  --color-border: #E2E8F0;
+  --color-primary: #4F46E5;
+  --color-secondary: #0891B2;
+  --color-accent: #16A34A;
+  --shadow-glow-primary: 0 4px 14px rgba(79, 70, 229, 0.15);
+  --shadow-glow-secondary: 0 4px 14px rgba(6, 182, 212, 0.15);
+  --shadow-glow-accent: 0 4px 14px rgba(34, 197, 94, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Base Styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  background-color: #0B0F1A;
+  color: #E5E7EB;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+.theme-light body {
+  background-color: #F8FAFC;
+  color: #0F172A;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Glass & Card Components
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.glass-panel {
+  background-color: rgba(17, 24, 39, 0.4);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.theme-light .glass-panel {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(226, 232, 240, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+}
+
+.glass-card {
+  background-color: rgba(31, 41, 55, 0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background-color: rgba(31, 41, 55, 0.7);
+}
+
+.theme-light .glass-card {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(226, 232, 240, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.theme-light .glass-card:hover {
+  background-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #4F46E5, #06B6D4, #22C55E);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(to right, #4F46E5, #06B6D4);
+  color: white;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Light Mode Component Overrides
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.theme-light nav {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-color: #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.theme-light aside {
+  background-color: rgba(248, 250, 252, 0.8);
+  border-color: #E2E8F0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CameraScanner Animations
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes scan-line {
+  0% { top: 0%; opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { top: 100%; opacity: 1; }
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: var(--color-secondary); box-shadow: var(--shadow-glow-secondary); }
+  50% { border-color: var(--color-primary); box-shadow: var(--shadow-glow-primary); }
+}
+
+@keyframes success-glow {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-scan-line {
+  animation: scan-line 2s ease-in-out infinite;
+}
+
+.animate-pulse-border {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+.animate-success-glow {
+  animation: success-glow 0.6s ease-out forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Typography Utilities
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}

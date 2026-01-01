@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+pydantic-settings
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+google-cloud-vision
+requests
+python-dotenv
+email-validator
+bcrypt==3.2.2
+pytesseract
+pillow
