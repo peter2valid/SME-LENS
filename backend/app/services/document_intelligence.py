@@ -69,6 +69,9 @@ class DocumentIntelligenceResult:
     confidence_level: str
     confidence_reason: str
     
+    # User explanation (Task 6)
+    explanation: str
+    
     # Processing notes
     notes: list[str]
     warnings: list[str]
@@ -91,48 +94,26 @@ class DocumentIntelligenceResult:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
+            "document_type": self.document_type,
             "raw_text": self.raw_text,
             "cleaned_text": self.cleaned_text,
             "extracted_data": self.extracted_data,
             "confidence": round(self.confidence, 2),
+            "explanation": self.explanation,
+            # Extra fields for debugging/frontend
             "confidence_level": self.confidence_level,
             "confidence_reason": self.confidence_reason,
             "notes": self.notes,
             "warnings": self.warnings,
             "suggestions": self.suggestions,
-            "document_type": self.document_type,
             "currency": self.currency,
-            "all_amounts": self.all_amounts,
-            "all_dates": self.all_dates,
-            "processing_steps": self.processing_steps,
             "success": self.success,
             "error": self.error
         }
     
     def to_simple_dict(self) -> dict[str, Any]:
         """Return simplified output for API response."""
-        return {
-            "raw_text": self.raw_text,
-            "cleaned_text": self.cleaned_text,
-            "extracted_data": self.extracted_data,
-            "confidence": round(self.confidence, 2),
-            "notes": self._build_notes_string()
-        }
-    
-    def _build_notes_string(self) -> str:
-        """Build a human-readable notes string."""
-        parts = []
-        
-        if self.document_type != "unknown":
-            parts.append(f"Document type: {self.document_type}")
-        
-        if self.warnings:
-            parts.append(f"Warnings: {'; '.join(self.warnings[:2])}")
-        
-        if self.confidence < 0.5:
-            parts.append("Low confidence - manual review recommended")
-        
-        return ". ".join(parts) if parts else "Processing completed successfully"
+        return self.to_dict()
 
 
 class DocumentIntelligenceEngine:
@@ -279,8 +260,7 @@ class DocumentIntelligenceEngine:
         result = extractor.extract_all(text)
         
         logger.info(f"DIE: Field extraction complete - "
-                   f"vendor={result.vendor.name if result.vendor else None}, "
-                   f"total={result.total_amount.value if result.total_amount else None}")
+                   f"type={result.document_type}")
         
         return result
     
@@ -293,18 +273,7 @@ class DocumentIntelligenceEngine:
     ) -> ConfidenceResult:
         """Calculate confidence score."""
         # Build fields dict for scorer
-        fields_dict = {
-            "vendor": extraction_result.vendor.name if extraction_result.vendor else None,
-            "total_amount": extraction_result.total_amount.value if extraction_result.total_amount else None,
-            "total_source": extraction_result.total_amount.source if extraction_result.total_amount else None,
-            "date": extraction_result.date.value if extraction_result.date else None,
-            "currency": extraction_result.currency,
-            "document_type": extraction_result.document_type,
-            "all_amounts": [
-                {"value": a.value, "confidence": a.confidence}
-                for a in extraction_result.all_amounts
-            ]
-        }
+        fields_dict = extraction_result.to_dict()
         
         scorer = ConfidenceScorer()
         result = scorer.score(
@@ -336,21 +305,21 @@ class DocumentIntelligenceEngine:
         if cleaning_result.correction_count > 0:
             notes.append(f"Applied {cleaning_result.correction_count} text corrections")
         
-        # Build extracted data dict
-        extracted_data = {
-            "vendor": extraction_result.vendor.name if extraction_result.vendor else None,
-            "date": extraction_result.date.value if extraction_result.date else None,
-            "total_amount": extraction_result.total_amount.value if extraction_result.total_amount else None,
-            "currency": extraction_result.currency
-        }
+        # Generate explanation (Task 6)
+        explanation = self._generate_explanation(
+            extraction_result.document_type,
+            confidence_result.overall_score,
+            confidence_result.warnings
+        )
         
         return DocumentIntelligenceResult(
             raw_text=raw_text,
             cleaned_text=cleaned_text,
-            extracted_data=extracted_data,
+            extracted_data=extraction_result.to_dict(),
             confidence=confidence_result.overall_score,
             confidence_level=confidence_result.level.value,
             confidence_reason=confidence_result.primary_reason,
+            explanation=explanation,
             notes=notes,
             warnings=confidence_result.warnings,
             suggestions=confidence_result.suggestions,
@@ -369,20 +338,32 @@ class DocumentIntelligenceEngine:
             success=True
         )
     
+    def _generate_explanation(self, doc_type: str, confidence: float, warnings: list[str]) -> str:
+        """Generate a human-friendly explanation."""
+        if doc_type == "unknown":
+            return "Could not determine the document type. Please ensure the image is clear."
+            
+        base = f"This appears to be a {doc_type}."
+        
+        if confidence > 0.85:
+            return f"{base} The data was extracted with high confidence."
+        elif confidence > 0.6:
+            if warnings:
+                return f"{base} Some fields may require review: {warnings[0].lower()}."
+            return f"{base} Please review the extracted fields."
+        else:
+            return f"{base} The image quality or handwriting made extraction difficult. Please verify all fields."
+
     def _empty_result(self, message: str) -> DocumentIntelligenceResult:
         """Return an empty result when no text is extracted."""
         return DocumentIntelligenceResult(
             raw_text="",
             cleaned_text="",
-            extracted_data={
-                "vendor": None,
-                "date": None,
-                "total_amount": None,
-                "currency": "UNKNOWN"
-            },
+            extracted_data={},
             confidence=0.0,
             confidence_level="very_low",
             confidence_reason=message,
+            explanation="No text could be found in the image.",
             notes=[message],
             warnings=["No text could be extracted"],
             suggestions=["Try re-scanning with better lighting or higher resolution"],
@@ -401,15 +382,11 @@ class DocumentIntelligenceEngine:
         return DocumentIntelligenceResult(
             raw_text="",
             cleaned_text="",
-            extracted_data={
-                "vendor": None,
-                "date": None,
-                "total_amount": None,
-                "currency": "UNKNOWN"
-            },
+            extracted_data={},
             confidence=0.0,
             confidence_level="very_low",
             confidence_reason=f"Processing error: {error_message}",
+            explanation="An error occurred while processing the document.",
             notes=[],
             warnings=[error_message],
             suggestions=["Check the image file and try again"],
@@ -441,13 +418,6 @@ def process_document(
         
     Returns:
         DocumentIntelligenceResult with all extracted data and confidence scoring
-        
-    Example:
-        >>> result = process_document("receipt.jpg", document_hint="receipt")
-        >>> print(result.extracted_data)
-        {'vendor': 'TOUCHVAS', 'date': '2024-01-15', 'total_amount': 1250.00, 'currency': 'KES'}
-        >>> print(result.confidence)
-        0.89
     """
     engine = DocumentIntelligenceEngine(lang=lang)
     return engine.process_image(image_path, document_hint=document_hint)

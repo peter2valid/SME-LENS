@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "SMELens",
+    "slug": "smelens-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0F1A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.smelens.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "SMELens needs camera access to scan receipts and invoices",
+        "NSPhotoLibraryUsageDescription": "SMELens needs photo library access to upload receipts and invoices"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B0F1A"
+      },
+      "package": "com.smelens.mobile",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow SMELens to access your camera to scan documents"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow SMELens to access your photos to upload documents"
+        }
+      ]
+    ]
+  }
+}

@@ -3,6 +3,7 @@ import ScanBox from './ScanBox';
 import ScanOverlay from './ScanOverlay';
 import CameraView from './CameraView';
 import Controls from './Controls';
+import ProcessingOverlay from '../ProcessingOverlay';
 
 /**
  * CameraScanner — Full-featured Google Lens-style scanner component
@@ -16,6 +17,7 @@ export default function CameraScanner({ onScanComplete, onError }) {
   const [status, setStatus] = useState('ready');   // 'ready' | 'scanning' | 'success' | 'error'
   const [imageSrc, setImageSrc] = useState(null);
   const [imageFile, setImageFile] = useState(null);
+  const [showCountdown, setShowCountdown] = useState(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -64,10 +66,16 @@ export default function CameraScanner({ onScanComplete, onError }) {
       const file = new File([blob], `scan-${Date.now()}.jpg`, { type: 'image/jpeg' });
       setImageFile(file);
       setImageSrc(URL.createObjectURL(blob));
-      setMode('upload'); // Switch to preview mode
-      setStatus('ready');
+      setShowCountdown(true); // Show countdown animation
     }, 'image/jpeg', 0.92);
   }, []);
+
+  // Handle countdown complete - transition to preview mode
+  const handleCountdownComplete = () => {
+    setShowCountdown(false);
+    setMode('upload'); // Switch to preview mode
+    setStatus('ready');
+  };
 
   // ─────────────────────────────────────────────────────────────────────────
   // Upload handlers
@@ -89,8 +97,7 @@ export default function CameraScanner({ onScanComplete, onError }) {
 
     setImageFile(file);
     setImageSrc(URL.createObjectURL(file));
-    setMode('upload');
-    setStatus('ready');
+    setShowCountdown(true); // Show countdown animation
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -156,6 +163,14 @@ export default function CameraScanner({ onScanComplete, onError }) {
             onCameraError={handleCameraError}
           />
           <ScanOverlay active={mode === 'camera' || status === 'scanning'} />
+          
+          {/* Processing Overlay with Countdown */}
+          <ProcessingOverlay
+            isVisible={showCountdown}
+            onComplete={handleCountdownComplete}
+            countFrom={3}
+            processingText="Analyzing document..."
+          />
         </ScanBox>
         <ScanOverlay helperText={helperText} />
       </div>

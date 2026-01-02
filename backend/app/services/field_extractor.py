@@ -4,18 +4,19 @@ Deterministic extraction of structured fields from OCR text.
 Uses regex patterns, proximity scoring, and contextual rules.
 
 Extracts:
-- vendor_name
+- vendor_name / sender / institution_name
 - date
 - total_amount
 - currency
 - document_type
-- line_items (optional)
+- form_title
+- identifiers
+- subject
 """
 import re
 import logging
 from typing import Optional, Any
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ class ExtractedAmount:
 @dataclass
 class ExtractedDate:
     """Represents an extracted date."""
-    value: str  # Normalized format
+    value: str  # Normalized format YYYY-MM-DD
     original: str  # As found in text
     confidence: float
     format_detected: str
@@ -53,7 +54,7 @@ class ExtractedDate:
 
 @dataclass 
 class ExtractedVendor:
-    """Represents an extracted vendor name."""
+    """Represents an extracted vendor/sender/institution."""
     name: str
     confidence: float
     source: str  # e.g., "first_line", "header_pattern"
@@ -62,33 +63,67 @@ class ExtractedVendor:
 @dataclass
 class ExtractionResult:
     """Complete extraction result with all fields."""
-    vendor: Optional[ExtractedVendor] = None
-    date: Optional[ExtractedDate] = None
-    total_amount: Optional[ExtractedAmount] = None
-    currency: str = "UNKNOWN"
+    # Common fields
     document_type: str = "unknown"
+    date: Optional[ExtractedDate] = None
+    currency: str = "UNKNOWN"
+    
+    # Receipt/Invoice fields
+    vendor: Optional[ExtractedVendor] = None
+    total_amount: Optional[ExtractedAmount] = None
+    
+    # Form fields
+    institution_name: Optional[str] = None
+    form_title: Optional[str] = None
+    identifiers: dict[str, str] = field(default_factory=dict)
+    
+    # Letter fields
+    sender: Optional[str] = None
+    subject: Optional[str] = None
+    
+    # Metadata
     all_amounts: list[ExtractedAmount] = field(default_factory=list)
     all_dates: list[ExtractedDate] = field(default_factory=list)
     extraction_notes: list[str] = field(default_factory=list)
     
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
-        return {
-            "vendor": self.vendor.name if self.vendor else None,
-            "date": self.date.value if self.date else None,
-            "total_amount": self.total_amount.value if self.total_amount else None,
-            "currency": self.currency,
+        base = {
             "document_type": self.document_type,
-            "all_amounts": [
-                {"value": a.value, "currency": a.currency, "confidence": a.confidence}
-                for a in self.all_amounts
-            ],
-            "all_dates": [
-                {"value": d.value, "original": d.original}
-                for d in self.all_dates
-            ],
+            "date": self.date.value if self.date else None,
+            "currency": self.currency,
             "notes": self.extraction_notes
         }
+        
+        if self.document_type in ["receipt", "invoice"]:
+            base.update({
+                "vendor": self.vendor.name if self.vendor else None,
+                "total_amount": self.total_amount.value if self.total_amount else None,
+            })
+        elif self.document_type == "form":
+            base.update({
+                "institution_name": self.institution_name,
+                "form_title": self.form_title,
+                "identifiers": self.identifiers
+            })
+        elif self.document_type == "letter":
+            base.update({
+                "sender": self.sender,
+                "subject": self.subject
+            })
+        else:
+            # Include everything for unknown
+            base.update({
+                "vendor": self.vendor.name if self.vendor else None,
+                "total_amount": self.total_amount.value if self.total_amount else None,
+                "institution_name": self.institution_name,
+                "form_title": self.form_title,
+                "identifiers": self.identifiers,
+                "sender": self.sender,
+                "subject": self.subject
+            })
+            
+        return base
 
 
 class FieldExtractor:
@@ -134,15 +169,12 @@ class FieldExtractor:
         (r'\bTZS\b', 'TZS'),
     ]
     
-    # Amount pattern - matches monetary values
-    AMOUNT_PATTERN = r'(?:KES|KSH|USD|\$|€|£)?\s*([\d,]+\.?\d*)'
-    
     # Vendor skip words - lines containing these are likely not vendor names
     VENDOR_SKIP_WORDS = [
         'receipt', 'invoice', 'total', 'subtotal', 'date', 'time',
         'tax', 'vat', 'payment', 'cash', 'change', 'balance',
         'thank you', 'thanks', 'tel:', 'phone:', 'email:', 'www.',
-        'address:', 'p.o. box', 'po box'
+        'address:', 'p.o. box', 'po box', 'pin:', 'vat no:'
     ]
     
     def __init__(self):
@@ -168,53 +200,74 @@ class FieldExtractor:
         # Detect currency
         currency = self._detect_currency(text)
         
-        # Extract all amounts
-        all_amounts = self._extract_amounts(text, currency)
-        
-        # Find the most likely total
-        total = self._find_total(text, all_amounts)
-        
         # Extract all dates
         all_dates = self._extract_dates(text)
-        
-        # Find the most likely document date
         doc_date = self._find_document_date(all_dates)
         
-        # Extract vendor name
-        vendor = self._extract_vendor(text)
-        
-        logger.info(f"FieldExtractor: Found vendor={vendor.name if vendor else None}, "
-                   f"total={total.value if total else None}, "
-                   f"date={doc_date.value if doc_date else None}")
-        
-        return ExtractionResult(
-            vendor=vendor,
-            date=doc_date,
-            total_amount=total,
-            currency=currency,
+        result = ExtractionResult(
             document_type=doc_type,
-            all_amounts=all_amounts,
+            date=doc_date,
+            currency=currency,
             all_dates=all_dates,
-            extraction_notes=self.notes.copy()
+            extraction_notes=self.notes
         )
+        
+        # Document-specific extraction
+        if doc_type in ['receipt', 'invoice']:
+            # Extract amounts
+            all_amounts = self._extract_amounts(text, currency)
+            total = self._find_total(text, all_amounts)
+            vendor = self._extract_vendor(text)
+            
+            result.total_amount = total
+            result.vendor = vendor
+            result.all_amounts = all_amounts
+            
+        elif doc_type == 'form':
+            # Extract form fields
+            result.institution_name = self._extract_institution(text)
+            result.form_title = self._extract_form_title(text)
+            result.identifiers = self._extract_identifiers(text)
+            
+        elif doc_type == 'letter':
+            # Extract letter fields
+            result.sender = self._extract_sender(text)
+            result.subject = self._extract_subject(text)
+            
+        else:
+            # Unknown type - try to extract everything
+            all_amounts = self._extract_amounts(text, currency)
+            total = self._find_total(text, all_amounts)
+            vendor = self._extract_vendor(text)
+            
+            result.total_amount = total
+            result.vendor = vendor
+            result.all_amounts = all_amounts
+        
+        return result
     
     def _detect_document_type(self, text: str) -> str:
         """Detect the type of document based on keywords."""
-        text_lower = text.lower()
+        text_upper = text.upper()
         
-        if any(word in text_lower for word in ['receipt', 'received', 'sold to']):
-            return 'receipt'
-        elif any(word in text_lower for word in ['invoice', 'inv no', 'invoice no']):
-            return 'invoice'
-        elif any(word in text_lower for word in ['quotation', 'quote', 'estimate']):
-            return 'quotation'
-        elif any(word in text_lower for word in ['purchase order', 'p.o.', 'po number']):
-            return 'purchase_order'
-        elif any(word in text_lower for word in ['delivery note', 'delivery']):
-            return 'delivery_note'
-        else:
-            self.notes.append("Could not determine document type")
-            return 'unknown'
+        # Task 1 Rules
+        if any(word in text_upper for word in ["RECEIPT", "TOTAL", "AMOUNT"]):
+            # Check if it's actually an invoice
+            if "INVOICE" in text_upper:
+                return "invoice"
+            return "receipt"
+            
+        if any(word in text_upper for word in ["INVOICE", "DUE DATE"]):
+            return "invoice"
+            
+        if any(word in text_upper for word in ["FORM", "STUDENT", "REGISTRATION", "SEMESTER"]):
+            return "form"
+            
+        if any(word in text for word in ["Dear", "Yours faithfully"]):
+            return "letter"
+            
+        self.notes.append("Could not determine document type")
+        return "unknown"
     
     def _detect_currency(self, text: str) -> str:
         """Detect the primary currency used in the document."""
@@ -239,7 +292,6 @@ class FieldExtractor:
         amounts: list[ExtractedAmount] = []
         
         # Find all number patterns that look like amounts
-        # Pattern matches: $123.45, 123.45, 1,234.56, etc.
         pattern = r'(?:' + '|'.join(p for p, _ in self.CURRENCY_PATTERNS) + r')?\s*([\d,]+\.?\d*)'
         
         for match in re.finditer(pattern, text, re.IGNORECASE):
@@ -283,34 +335,20 @@ class FieldExtractor:
     
     def _looks_like_date_or_time(self, text: str) -> bool:
         """Check if a number string looks like a date or time."""
-        # Time pattern: HH:MM or HH:MM:SS
         if re.match(r'^\d{1,2}:\d{2}(:\d{2})?$', text):
             return True
-        # Date pattern
         if re.match(r'^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$', text):
             return True
         return False
     
     def _looks_like_year(self, value: float) -> bool:
         """Check if a value looks like a year (should not be a price)."""
-        # Years are typically 1900-2100
         if 1900 <= value <= 2100 and value == int(value):
             return True
         return False
-    
-    def _find_total(
-        self, 
-        text: str, 
-        amounts: list[ExtractedAmount]
-    ) -> Optional[ExtractedAmount]:
-        """
-        Find the most likely total amount using multiple strategies.
-        
-        Strategies:
-        1. Amount appearing near "TOTAL" keyword
-        2. Largest amount (common heuristic)
-        3. Last amount in document (often the total)
-        """
+
+    def _find_total(self, text: str, amounts: list[ExtractedAmount]) -> Optional[ExtractedAmount]:
+        """Find the most likely total amount."""
         if not amounts:
             self.notes.append("No amounts found in document")
             return None
@@ -322,53 +360,41 @@ class FieldExtractor:
         total_candidates: list[tuple[ExtractedAmount, float]] = []
         
         for i, line in enumerate(lines):
-            is_subtotal_line = any(
-                re.search(kw, line) for kw in self.SUBTOTAL_KEYWORDS
-            )
-            is_total_line = any(
-                re.search(kw, line) for kw in self.TOTAL_KEYWORDS
-            ) and not is_subtotal_line
+            is_subtotal_line = any(re.search(kw, line) for kw in self.SUBTOTAL_KEYWORDS)
+            is_total_line = any(re.search(kw, line) for kw in self.TOTAL_KEYWORDS) and not is_subtotal_line
             
             if is_total_line:
-                # Find amounts on this line or next line
                 search_area = line
                 if i + 1 < len(lines):
                     search_area += ' ' + lines[i + 1]
                 
                 for amount in amounts:
-                    # Check if this amount appears in the search area
                     amount_str = f"{amount.value:.2f}"
                     if amount_str in search_area or str(int(amount.value)) in search_area:
-                        # High confidence - near total keyword
                         total_candidates.append((amount, 0.95))
         
-        # If we found candidates near keywords, use the largest one
         if total_candidates:
             best = max(total_candidates, key=lambda x: (x[1], x[0].value))
             best[0].confidence = best[1]
             best[0].source = "near_keyword"
             return best[0]
         
-        # Strategy 2: Prefer amounts with currency symbols
+        # Strategy 2: Largest amount with currency symbol
         amounts_with_currency = [
             a for a in amounts 
             if any(sym in a.raw_text for sym in ['$', '€', '£', 'KES', 'KSH', 'USD'])
         ]
         
         if amounts_with_currency:
-            # Pick the largest amount that has a currency symbol
             best = max(amounts_with_currency, key=lambda a: a.value)
             best.confidence = 0.85
             best.source = "currency_symbol"
-            self.notes.append("Total identified by currency symbol")
             return best
         
-        # Strategy 3: Use the largest amount as fallback
+        # Strategy 3: Largest amount
         largest = max(amounts, key=lambda a: a.value)
         largest.confidence = 0.7
         largest.source = "largest_value"
-        self.notes.append("Total identified as largest amount (no keyword found)")
-        
         return largest
     
     def _extract_dates(self, text: str) -> list[ExtractedDate]:
@@ -378,6 +404,11 @@ class FieldExtractor:
         for pattern, format_type in self.DATE_PATTERNS:
             for match in re.finditer(pattern, text, re.IGNORECASE):
                 original = match.group(0)
+                
+                # Reject OCR noise (Task 3)
+                if re.search(r'[<>=]', original):
+                    continue
+                    
                 normalized = self._normalize_date(match, format_type)
                 
                 if normalized:
@@ -387,7 +418,6 @@ class FieldExtractor:
                         confidence=0.8,
                         format_detected=format_type
                     ))
-        
         return dates
     
     def _normalize_date(self, match: re.Match, format_type: str) -> Optional[str]:
@@ -398,7 +428,6 @@ class FieldExtractor:
             if format_type == 'YMD':
                 year, month, day = groups[0], groups[1], groups[2]
             elif format_type in ['DMY_or_MDY', 'DMY_or_MDY_short']:
-                # Assume DD/MM/YYYY for African context
                 day, month, year = groups[0], groups[1], groups[2]
                 if len(year) == 2:
                     year = '20' + year if int(year) < 50 else '19' + year
@@ -413,7 +442,6 @@ class FieldExtractor:
             else:
                 return None
             
-            # Validate and format
             day = int(day)
             month = int(month) if isinstance(month, str) else month
             year = int(year)
@@ -423,11 +451,9 @@ class FieldExtractor:
                 
         except (ValueError, TypeError, IndexError):
             pass
-        
         return None
     
     def _month_name_to_num(self, name: str) -> int:
-        """Convert month name to number."""
         months = {
             'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4,
             'may': 5, 'jun': 6, 'jul': 7, 'aug': 8,
@@ -435,68 +461,115 @@ class FieldExtractor:
         }
         return months.get(name.lower()[:3], 0)
     
-    def _find_document_date(
-        self, 
-        dates: list[ExtractedDate]
-    ) -> Optional[ExtractedDate]:
+    def _find_document_date(self, dates: list[ExtractedDate]) -> Optional[ExtractedDate]:
         """Find the most likely document date."""
         if not dates:
             self.notes.append("No dates found in document")
             return None
-        
-        # Prefer dates near keywords like "Date:", "Dated", etc.
-        # For now, return the first date found (usually the document date)
         return dates[0]
     
     def _extract_vendor(self, text: str) -> Optional[ExtractedVendor]:
         """
-        Extract vendor/business name from text.
-        
-        Strategy:
-        1. First non-trivial line that's not a date or keyword
-        2. Lines in ALL CAPS (often business names)
-        3. Lines before the word "RECEIPT" or "INVOICE"
+        Extract vendor/business name.
+        Task 3: Prefer top 15% of document.
         """
         lines = text.split('\n')
+        total_lines = len(lines)
+        threshold_line = max(int(total_lines * 0.15), 5) # At least 5 lines or 15%
         
         for i, line in enumerate(lines):
+            if i > threshold_line:
+                break
+                
             line = line.strip()
             
-            # Skip empty or very short lines
-            if len(line) < 3:
+            # Task 3: Ignore symbols, random OCR noise, must be > 3 chars
+            if len(line) <= 3:
                 continue
-            
+                
+            # Check for alphabetic words
+            if not re.search(r'[a-zA-Z]', line):
+                continue
+                
             # Skip lines with skip words
             line_lower = line.lower()
             if any(skip in line_lower for skip in self.VENDOR_SKIP_WORDS):
                 continue
             
-            # Skip lines that are just dates
-            if re.match(r'^[\d/.-]+$', line):
+            # Skip dates/numbers
+            if re.match(r'^[\d/.-]+$', line) or re.match(r'^[\d,.\s$€£]+$', line):
                 continue
             
-            # Skip lines that are just numbers
-            if re.match(r'^[\d,.\s$€£]+$', line):
-                continue
-            
-            # Found a candidate
             confidence = 0.8
-            source = "first_line"
+            source = "top_15_percent"
             
-            # Boost confidence if all caps
-            if line.isupper() and len(line) > 3:
+            if line.isupper():
                 confidence = 0.9
                 source = "all_caps_header"
             
-            return ExtractedVendor(
-                name=line,
-                confidence=confidence,
-                source=source
-            )
+            return ExtractedVendor(name=line, confidence=confidence, source=source)
         
-        self.notes.append("Could not identify vendor name")
+        self.notes.append("Could not identify vendor name in top 15%")
         return None
 
+    def _extract_institution(self, text: str) -> Optional[str]:
+        """Extract institution name for forms."""
+        # Similar to vendor but looks for "University", "School", "College", "Institute"
+        lines = text.split('\n')
+        keywords = ["university", "school", "college", "institute", "academy", "hospital", "clinic"]
+        
+        for line in lines[:10]: # Top 10 lines
+            if any(kw in line.lower() for kw in keywords):
+                return line.strip()
+        
+        # Fallback to first valid line
+        for line in lines[:5]:
+            if len(line) > 5 and not any(char.isdigit() for char in line):
+                return line.strip()
+        return None
+
+    def _extract_form_title(self, text: str) -> Optional[str]:
+        """Extract form title."""
+        lines = text.split('\n')
+        keywords = ["form", "registration", "application", "admission", "report"]
+        
+        for line in lines[:10]:
+            if any(kw in line.lower() for kw in keywords):
+                return line.strip()
+        return None
+
+    def _extract_identifiers(self, text: str) -> dict[str, str]:
+        """Extract IDs like registration numbers."""
+        identifiers = {}
+        
+        # Reg No / Student No
+        reg_match = re.search(r'(?:reg|registration|student|admission)\s*(?:no|number|id)?\s*[:.]?\s*([A-Z0-9/-]+)', text, re.IGNORECASE)
+        if reg_match:
+            identifiers["registration_number"] = reg_match.group(1)
+            
+        # ID Number
+        id_match = re.search(r'(?:id|identity)\s*(?:no|number)\s*[:.]?\s*(\d+)', text, re.IGNORECASE)
+        if id_match:
+            identifiers["id_number"] = id_match.group(1)
+            
+        return identifiers
+
+    def _extract_sender(self, text: str) -> Optional[str]:
+        """Extract sender for letters."""
+        # Usually top left or bottom (Yours faithfully)
+        # For now, assume top line
+        lines = text.split('\n')
+        for line in lines[:5]:
+            if len(line) > 3 and not any(char.isdigit() for char in line):
+                return line.strip()
+        return None
+
+    def _extract_subject(self, text: str) -> Optional[str]:
+        """Extract subject line (RE: ...)"""
+        match = re.search(r'(?:RE|REF|SUBJECT)\s*[:.]?\s*(.+)', text, re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+        return None
 
 def extract_fields(text: str) -> ExtractionResult:
     """

@@ -205,41 +205,126 @@ const UploadPage = () => {
                             animate={{ opacity: 1, y: 0 }}
                             className="space-y-8"
                         >
+                            {/* Header with Type and Confidence */}
                             <div className="flex items-center justify-between border-b border-border pb-6">
-                                <h3 className="text-2xl font-bold text-success flex items-center">
-                                    <CheckCircle className="w-6 h-6 mr-3" />
-                                    Extraction Complete
-                                </h3>
-                                <span className="text-xs font-bold uppercase tracking-wider bg-success/20 text-success px-3 py-1 rounded-full border border-success/20">
-                                    {Math.round((result.ocr_result?.confidence_score || 0) * 100)}% Confidence
-                                </span>
+                                <div>
+                                    <h3 className="text-2xl font-bold text-text flex items-center capitalize">
+                                        {result.document_type || "Document"} Detected
+                                    </h3>
+                                    <p className="text-sm text-muted mt-1 max-w-md">
+                                        {result.explanation}
+                                    </p>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                    <span className={`text-lg font-black ${
+                                        result.confidence > 0.8 ? 'text-success' : 
+                                        result.confidence > 0.5 ? 'text-warning' : 'text-danger'
+                                    }`}>
+                                        {Math.round((result.confidence || 0) * 100)}%
+                                    </span>
+                                    <span className="text-xs text-muted uppercase tracking-wider">Confidence</span>
+                                </div>
                             </div>
 
+                            {/* Dynamic Fields based on Type */}
                             <div className="space-y-6">
-                                <div className="bg-primary/5 p-4 rounded-xl border border-border">
-                                    <label className="text-xs text-muted uppercase tracking-wider font-bold">Vendor</label>
-                                    <p className="text-2xl font-bold text-text mt-1">{result.ocr_result?.extracted_data?.vendor || "Unknown Vendor"}</p>
-                                </div>
+                                
+                                {/* Receipt / Invoice Fields */}
+                                {['receipt', 'invoice', 'unknown'].includes(result.document_type) && (
+                                    <>
+                                        <div className="bg-primary/5 p-4 rounded-xl border border-border">
+                                            <label className="text-xs text-muted uppercase tracking-wider font-bold">Vendor / Business</label>
+                                            <p className="text-2xl font-bold text-text mt-1">
+                                                {result.extracted_data?.vendor || "Unknown Vendor"}
+                                            </p>
+                                        </div>
 
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="bg-primary/5 p-4 rounded-xl border border-border">
-                                        <label className="text-xs text-muted uppercase tracking-wider font-bold">Date</label>
-                                        <p className="text-lg font-medium text-text mt-1">{result.ocr_result?.extracted_data?.date || "N/A"}</p>
-                                    </div>
-                                    <div className="bg-primary/10 p-4 rounded-xl border border-primary/20 relative overflow-hidden">
-                                        <label className="text-xs text-primary uppercase tracking-wider font-bold relative z-10">Total Amount</label>
-                                        <p className="font-black text-3xl text-gradient mt-1 relative z-10">
-                                            {result.ocr_result?.extracted_data?.total ? `$${result.ocr_result.extracted_data.total}` : "N/A"}
-                                        </p>
-                                    </div>
-                                </div>
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="bg-primary/5 p-4 rounded-xl border border-border">
+                                                <label className="text-xs text-muted uppercase tracking-wider font-bold">Date</label>
+                                                <p className="text-lg font-medium text-text mt-1">
+                                                    {result.extracted_data?.date || "N/A"}
+                                                </p>
+                                            </div>
+                                            <div className="bg-primary/10 p-4 rounded-xl border border-primary/20 relative overflow-hidden">
+                                                <label className="text-xs text-primary uppercase tracking-wider font-bold relative z-10">Total Amount</label>
+                                                <p className="font-black text-3xl text-gradient mt-1 relative z-10">
+                                                    {result.extracted_data?.currency || ""} {result.extracted_data?.total_amount || "0.00"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
 
+                                {/* Form Fields */}
+                                {result.document_type === 'form' && (
+                                    <>
+                                        <div className="bg-primary/5 p-4 rounded-xl border border-border">
+                                            <label className="text-xs text-muted uppercase tracking-wider font-bold">Institution</label>
+                                            <p className="text-xl font-bold text-text mt-1">
+                                                {result.extracted_data?.institution_name || "Unknown Institution"}
+                                            </p>
+                                        </div>
+                                        
+                                        <div className="bg-surface p-4 rounded-xl border border-border">
+                                            <label className="text-xs text-muted uppercase tracking-wider font-bold">Form Title</label>
+                                            <p className="text-lg font-medium text-text mt-1">
+                                                {result.extracted_data?.form_title || "Untitled Form"}
+                                            </p>
+                                        </div>
+
+                                        {result.extracted_data?.identifiers && Object.entries(result.extracted_data.identifiers).map(([key, value]) => (
+                                            <div key={key} className="bg-surface p-4 rounded-xl border border-border flex justify-between items-center">
+                                                <label className="text-xs text-muted uppercase tracking-wider font-bold capitalize">{key.replace('_', ' ')}</label>
+                                                <p className="text-lg font-mono font-bold text-primary">{value}</p>
+                                            </div>
+                                        ))}
+                                    </>
+                                )}
+
+                                {/* Letter Fields */}
+                                {result.document_type === 'letter' && (
+                                    <>
+                                        <div className="bg-primary/5 p-4 rounded-xl border border-border">
+                                            <label className="text-xs text-muted uppercase tracking-wider font-bold">Sender</label>
+                                            <p className="text-xl font-bold text-text mt-1">
+                                                {result.extracted_data?.sender || "Unknown Sender"}
+                                            </p>
+                                        </div>
+                                        
+                                        <div className="bg-surface p-4 rounded-xl border border-border">
+                                            <label className="text-xs text-muted uppercase tracking-wider font-bold">Subject</label>
+                                            <p className="text-lg font-medium text-text mt-1 italic">
+                                                {result.extracted_data?.subject || "No Subject"}
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Common: Raw Text Toggle */}
                                 <div className="pt-6 border-t border-border">
-                                    <label className="text-xs text-muted uppercase tracking-wider mb-3 block font-bold">Raw Text Preview</label>
-                                    <div className="bg-surface p-4 rounded-xl text-sm text-muted font-mono text-xs max-h-48 overflow-y-auto border border-border">
-                                        {result.ocr_result?.raw_text}
-                                    </div>
+                                    <details className="group">
+                                        <summary className="flex items-center justify-between cursor-pointer list-none text-xs text-muted uppercase tracking-wider font-bold mb-3">
+                                            <span>Raw Text Preview</span>
+                                            <span className="group-open:rotate-180 transition-transform">▼</span>
+                                        </summary>
+                                        <div className="bg-surface p-4 rounded-xl text-sm text-muted font-mono text-xs max-h-48 overflow-y-auto border border-border whitespace-pre-wrap">
+                                            {result.cleaned_text || result.raw_text}
+                                        </div>
+                                    </details>
                                 </div>
+                                
+                                {/* Debug/Notes */}
+                                {result.notes && result.notes.length > 0 && (
+                                    <div className="bg-warning/5 border border-warning/20 p-4 rounded-xl">
+                                        <label className="text-xs text-warning uppercase tracking-wider font-bold mb-2 block">System Notes</label>
+                                        <ul className="list-disc list-inside text-xs text-muted space-y-1">
+                                            {result.notes.map((note, i) => (
+                                                <li key={i}>{note}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     )}
