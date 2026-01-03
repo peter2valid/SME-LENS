@@ -1,0 +1,189 @@
+/* Folder Component Styles */
+:root {
+  --folder-color: #4F46E5;
+  --folder-back-color: #3730A3;
+  --paper-color: #ffffff;
+  --paper-alt: #f3f4f6;
+  --paper-alt2: #e5e7eb;
+}
+
+.folder-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.folder-wrapper:hover {
+  transform: translateY(-4px);
+}
+
+.folder-wrapper:active {
+  transform: scale(0.95);
+}
+
+/* Main folder container with 3D perspective */
+.folder {
+  position: relative;
+  width: calc(80px * var(--folder-size, 1));
+  height: calc(60px * var(--folder-size, 1));
+  transform-style: preserve-3d;
+  perspective: 800px;
+  transition: transform 0.4s ease;
+}
+
+.folder:hover {
+  transform: rotateX(-5deg);
+}
+
+/* Folder back panel */
+.folder-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 0 8px 8px 8px;
+  transform: translateZ(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Folder front panel with opening animation */
+.folder-front {
+  position: absolute;
+  width: 100%;
+  height: 70%;
+  bottom: 0;
+  border-radius: 0 0 8px 8px;
+  transform-origin: bottom center;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+/* Tab on folder front */
+.folder-tab {
+  position: absolute;
+  top: -12px;
+  left: 0;
+  width: 35%;
+  height: 14px;
+  border-radius: 6px 6px 0 0;
+  filter: brightness(1.1);
+}
+
+/* Open state - front flips up */
+.folder.open .folder-front {
+  transform: rotateX(-45deg) translateY(-5px);
+}
+
+/* Papers container */
+.folder-papers {
+  position: absolute;
+  width: 85%;
+  height: 75%;
+  left: 50%;
+  bottom: 15%;
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+/* Individual paper sheets */
+.folder-paper {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: var(--paper-color);
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-delay: var(--delay, 0s);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.folder-paper.paper-1 {
+  background: var(--paper-color);
+  transform: translateY(0) rotate(0deg);
+}
+
+.folder-paper.paper-2 {
+  background: var(--paper-alt);
+  transform: translateY(-2px) rotate(-2deg);
+}
+
+.folder-paper.paper-3 {
+  background: var(--paper-alt2);
+  transform: translateY(-4px) rotate(2deg);
+}
+
+/* Papers pop up when folder opens */
+.folder.open .folder-paper.paper-1 {
+  transform: translateY(-25px) rotate(-8deg) scale(0.95);
+}
+
+.folder.open .folder-paper.paper-2 {
+  transform: translateY(-35px) rotate(0deg) scale(0.9);
+}
+
+.folder.open .folder-paper.paper-3 {
+  transform: translateY(-45px) rotate(6deg) scale(0.85);
+}
+
+/* Paper icon */
+.paper-icon {
+  font-size: calc(16px * var(--folder-size, 1));
+  opacity: 0.6;
+}
+
+/* Folder label */
+.folder-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text, #fff);
+  text-align: center;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Item count badge */
+.folder-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+  z-index: 20;
+}
+
+/* Touch-friendly adjustments */
+@media (hover: none) {
+  .folder-wrapper:active .folder .folder-front {
+    transform: rotateX(-45deg) translateY(-5px);
+  }
+  
+  .folder-wrapper:active .folder .folder-paper.paper-1 {
+    transform: translateY(-25px) rotate(-8deg) scale(0.95);
+  }
+  
+  .folder-wrapper:active .folder .folder-paper.paper-2 {
+    transform: translateY(-35px) rotate(0deg) scale(0.9);
+  }
+  
+  .folder-wrapper:active .folder .folder-paper.paper-3 {
+    transform: translateY(-45px) rotate(6deg) scale(0.85);
+  }
+}

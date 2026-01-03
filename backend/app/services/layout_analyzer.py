@@ -627,7 +627,7 @@ class LayoutAnalyzer:
     def find_rightmost_amount(
         self,
         layout: LayoutAnalysisResult,
-        zone: Zone = None
+        zone: Optional[Zone] = None
     ) -> Optional[tuple[float, LayoutLine]]:
         """
         Find the rightmost amount (often the total in receipts).
@@ -663,8 +663,8 @@ class LayoutAnalyzer:
 
 
 def analyze_layout(
-    text: str = None,
-    ocr_words: list[dict] = None,
+    text: Optional[str] = None,
+    ocr_words: Optional[list[dict]] = None,
     page_width: int = 0,
     page_height: int = 0
 ) -> LayoutAnalysisResult:

@@ -154,17 +154,17 @@ class EnterpriseConfidenceScorer:
         self,
         # OCR factors
         ocr_confidence: float,  # 0-100 from Tesseract
-        low_confidence_words: list[str] = None,
+        low_confidence_words: Optional[list[str]] = None,
         
         # Consensus factors
-        consensus_results: dict[str, Any] = None,
+        consensus_results: Optional[dict[str, Any]] = None,
         
         # Layout factors
         layout_consistent: bool = True,
         fields_in_expected_zones: bool = True,
         
         # Business rule factors
-        extracted_fields: dict[str, Any] = None,
+        extracted_fields: Optional[dict[str, Any]] = None,
         document_type: str = "unknown",
         
         # Memory factors
@@ -661,13 +661,13 @@ class EnterpriseConfidenceScorer:
 
 def compute_confidence(
     ocr_confidence: float = 80.0,
-    consensus_results: dict = None,
-    extracted_fields: dict = None,
+    consensus_results: Optional[dict] = None,
+    extracted_fields: Optional[dict] = None,
     document_type: str = "unknown",
     memory_match_score: float = 0.0,
     user_confirmed: bool = False,
     raw_text: str = "",
-    low_confidence_words: list = None
+    low_confidence_words: Optional[list] = None
 ) -> ConfidenceBreakdown:
     """
     Convenience function to compute confidence.

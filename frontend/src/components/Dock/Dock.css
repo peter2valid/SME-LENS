@@ -1,0 +1,254 @@
+/* Dock Component Styles */
+
+.dock-container {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.dock-container.dock-bottom {
+  bottom: 16px;
+  left: 0;
+  right: 0;
+}
+
+.dock-container.dock-top {
+  top: 16px;
+  left: 0;
+  right: 0;
+}
+
+.dock {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 20px 16px;
+  pointer-events: auto;
+}
+
+/* Glassmorphism background */
+.dock-background {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 25, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 -4px 16px rgba(79, 70, 229, 0.1) inset;
+}
+
+/* Dock items container */
+.dock-items {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  z-index: 2;
+}
+
+/* Individual dock item */
+.dock-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.dock-item:hover {
+  filter: brightness(1.1);
+}
+
+/* Primary item (Scan button) */
+.dock-item-primary {
+  margin: 0 8px;
+}
+
+/* Icon wrapper */
+.dock-icon-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Icon container */
+.dock-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dock-icon:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Primary icon (larger, gradient) */
+.dock-icon-primary {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  box-shadow: 
+    0 4px 20px rgba(245, 158, 11, 0.4),
+    0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.dock-icon-primary:hover {
+  box-shadow: 
+    0 6px 30px rgba(245, 158, 11, 0.5),
+    0 0 0 4px rgba(245, 158, 11, 0.3);
+}
+
+/* Icon labels */
+.dock-icon-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+/* Tooltip */
+.dock-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 12px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dock-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+/* Reflection effect */
+.dock-reflection {
+  position: absolute;
+  bottom: -8px;
+  left: 20px;
+  right: 20px;
+  height: 30px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.03),
+    transparent
+  );
+  border-radius: 0 0 20px 20px;
+  filter: blur(4px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Separator between items */
+.dock-separator {
+  width: 1px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 8px;
+}
+
+/* Bounce animation for notifications */
+@keyframes dock-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.dock-item-bounce {
+  animation: dock-bounce 0.5s ease-in-out infinite;
+}
+
+/* Glow effect for active items */
+.dock-item-active::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: #4F46E5;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #4F46E5;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .dock-container.dock-bottom {
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+  }
+  
+  .dock {
+    padding: 10px 16px 12px;
+    width: 100%;
+    justify-content: space-around;
+  }
+  
+  .dock-items {
+    gap: 4px;
+    width: 100%;
+    justify-content: space-around;
+  }
+  
+  .dock-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+  }
+  
+  .dock-icon-primary {
+    width: 54px;
+    height: 54px;
+  }
+  
+  .dock-icon-label {
+    font-size: 9px;
+  }
+  
+  .folder-wrapper {
+    transform: scale(0.85);
+  }
+  
+  .dock-tooltip {
+    display: none;
+  }
+}
+
+/* Safe area for iOS devices */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .dock-container.dock-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

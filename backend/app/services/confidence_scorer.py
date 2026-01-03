@@ -404,7 +404,7 @@ def score_confidence(
     preprocessing_quality: float,
     extracted_fields: dict[str, Any],
     raw_text: str,
-    low_confidence_words: list[str] = None
+    low_confidence_words: Optional[list[str]] = None
 ) -> ConfidenceResult:
     """
     Convenience function to calculate confidence score.

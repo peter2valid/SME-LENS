@@ -1,10 +1,37 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, LayoutDashboard, History, PlusCircle } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import { Dock } from './Dock';
+import api from '../services/api';
 
 const Layout = ({ children }) => {
-    // Logout removed as per No-Auth plan
+    const location = useLocation();
+    const [recentDocs, setRecentDocs] = useState([]);
+    const [showDock, setShowDock] = useState(true);
+
+    // Fetch recent docs for folder preview
+    useEffect(() => {
+        const fetchRecentDocs = async () => {
+            try {
+                const res = await api.get('/upload/');
+                const docs = res.data.slice(0, 5).map(doc => ({
+                    id: doc.id,
+                    vendor: doc.ocr_result?.extracted_data?.vendor || 'Document',
+                    total: doc.ocr_result?.extracted_data?.total_amount || doc.ocr_result?.extracted_data?.total
+                }));
+                setRecentDocs(docs);
+            } catch (error) {
+                console.error('Failed to fetch recent docs', error);
+            }
+        };
+        fetchRecentDocs();
+    }, []);
+
+    // Hide dock on upload page (has its own UI)
+    useEffect(() => {
+        setShowDock(!location.pathname.includes('/upload'));
+    }, [location]);
 
     return (
         <div className="min-h-screen bg-background text-text font-sans selection:bg-primary/30">
@@ -44,12 +71,17 @@ const Layout = ({ children }) => {
                     </div>
                 </aside>
 
-                {/* Main Content */}
-                <main className="flex-1 lg:ml-64 p-6 overflow-y-auto">
+                {/* Main Content - add padding for dock on mobile */}
+                <main className="flex-1 lg:ml-64 p-6 pb-32 lg:pb-6 overflow-y-auto">
                     <div className="max-w-7xl mx-auto">
                         {children}
                     </div>
                 </main>
+            </div>
+
+            {/* Mobile Dock - only visible on smaller screens */}
+            <div className="lg:hidden">
+                <Dock recentDocs={recentDocs} visible={showDock} />
             </div>
         </div>
     );

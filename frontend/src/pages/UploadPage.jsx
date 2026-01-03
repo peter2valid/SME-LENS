@@ -301,6 +301,92 @@ const UploadPage = () => {
                                     </>
                                 )}
 
+                                {/* Government ID Documents (Birth Certificate, National ID, Passport, etc.) */}
+                                {['birth_certificate', 'national_id', 'passport', 'driving_license'].includes(result.document_type) && (
+                                    <>
+                                        {/* ID Type Badge */}
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-secondary/20 text-secondary border border-secondary/30">
+                                                {result.document_type.replace('_', ' ')}
+                                            </span>
+                                            {result.extracted_data?.issuing_authority && (
+                                                <span className="text-xs text-muted">{result.extracted_data.issuing_authority}</span>
+                                            )}
+                                        </div>
+
+                                        {/* Full Name - Primary Field */}
+                                        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-5 rounded-xl border border-primary/20">
+                                            <label className="text-xs text-primary uppercase tracking-wider font-bold">Full Name</label>
+                                            <p className="text-2xl font-black text-text mt-1">
+                                                {result.extracted_data?.full_name || "Name not extracted"}
+                                            </p>
+                                        </div>
+
+                                        {/* ID Number */}
+                                        {result.extracted_data?.id_number && (
+                                            <div className="bg-surface p-4 rounded-xl border border-border">
+                                                <label className="text-xs text-muted uppercase tracking-wider font-bold">Certificate / ID Number</label>
+                                                <p className="text-xl font-mono font-bold text-primary mt-1">
+                                                    {result.extracted_data.id_number}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {/* Date of Birth */}
+                                            <div className="bg-primary/5 p-4 rounded-xl border border-border">
+                                                <label className="text-xs text-muted uppercase tracking-wider font-bold">Date of Birth</label>
+                                                <p className="text-lg font-medium text-text mt-1">
+                                                    {result.extracted_data?.date_of_birth || result.extracted_data?.date || "N/A"}
+                                                </p>
+                                            </div>
+
+                                            {/* Place of Birth */}
+                                            <div className="bg-primary/5 p-4 rounded-xl border border-border">
+                                                <label className="text-xs text-muted uppercase tracking-wider font-bold">Place of Birth</label>
+                                                <p className="text-lg font-medium text-text mt-1">
+                                                    {result.extracted_data?.place_of_birth || "N/A"}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Parents' Names */}
+                                        {(result.extracted_data?.father_name || result.extracted_data?.mother_name) && (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {result.extracted_data?.father_name && (
+                                                    <div className="bg-surface p-4 rounded-xl border border-border">
+                                                        <label className="text-xs text-muted uppercase tracking-wider font-bold">Father's Name</label>
+                                                        <p className="text-lg font-medium text-text mt-1">
+                                                            {result.extracted_data.father_name}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {result.extracted_data?.mother_name && (
+                                                    <div className="bg-surface p-4 rounded-xl border border-border">
+                                                        <label className="text-xs text-muted uppercase tracking-wider font-bold">Mother's Name</label>
+                                                        <p className="text-lg font-medium text-text mt-1">
+                                                            {result.extracted_data.mother_name}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Other Identifiers */}
+                                        {result.extracted_data?.identifiers && Object.keys(result.extracted_data.identifiers).length > 0 && (
+                                            <div className="space-y-2">
+                                                <label className="text-xs text-muted uppercase tracking-wider font-bold">Other Details</label>
+                                                {Object.entries(result.extracted_data.identifiers).map(([key, value]) => (
+                                                    <div key={key} className="bg-surface p-3 rounded-lg border border-border flex justify-between items-center">
+                                                        <span className="text-xs text-muted capitalize">{key.replace('_', ' ')}</span>
+                                                        <span className="text-sm font-mono font-bold text-text">{value}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+
                                 {/* Common: Raw Text Toggle */}
                                 <div className="pt-6 border-t border-border">
                                     <details className="group">

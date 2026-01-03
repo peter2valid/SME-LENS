@@ -208,7 +208,7 @@ class LearningMemory:
     KNOWN_PATTERN_BOOST = 0.15
     CONFIRMED_PATTERN_BOOST = 0.25
     
-    def __init__(self, storage_path: str = None):
+    def __init__(self, storage_path: Optional[str] = None):
         """
         Initialize learning memory.
         
@@ -427,7 +427,7 @@ class LearningMemory:
         self,
         fingerprint: DocumentFingerprint,
         extracted_fields: dict[str, Any],
-        field_positions: dict[str, dict] = None,
+        field_positions: Optional[dict[str, dict]] = None,
         user_confirmed: bool = False
     ) -> None:
         """
@@ -581,8 +581,8 @@ class LearningMemory:
     
     def get_common_corrections(
         self,
-        document_type: str = None,
-        vendor_name: str = None,
+        document_type: Optional[str] = None,
+        vendor_name: Optional[str] = None,
         min_count: int = 2
     ) -> list[UserCorrection]:
         """

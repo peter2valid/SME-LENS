@@ -243,7 +243,7 @@ class ImagePreprocessor:
         # Weighted average
         quality = (contrast_score * 0.4 + sharpness_score * 0.4 + size_score * 0.2)
         
-        return round(quality, 2)
+        return float(round(quality, 2))
 
 
 def preprocess_image(image_path: str, document_type: str = "unknown") -> PreprocessingResult:

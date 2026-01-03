@@ -81,6 +81,15 @@ class ExtractionResult:
     sender: Optional[str] = None
     subject: Optional[str] = None
     
+    # Government ID fields
+    full_name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    place_of_birth: Optional[str] = None
+    id_number: Optional[str] = None
+    father_name: Optional[str] = None
+    mother_name: Optional[str] = None
+    issuing_authority: Optional[str] = None
+    
     # Metadata
     all_amounts: list[ExtractedAmount] = field(default_factory=list)
     all_dates: list[ExtractedDate] = field(default_factory=list)
@@ -110,6 +119,17 @@ class ExtractionResult:
             base.update({
                 "sender": self.sender,
                 "subject": self.subject
+            })
+        elif self.document_type in ["birth_certificate", "national_id", "passport", "driving_license"]:
+            base.update({
+                "full_name": self.full_name,
+                "date_of_birth": self.date_of_birth,
+                "place_of_birth": self.place_of_birth,
+                "id_number": self.id_number,
+                "father_name": self.father_name,
+                "mother_name": self.mother_name,
+                "issuing_authority": self.issuing_authority,
+                "identifiers": self.identifiers
             })
         else:
             # Include everything for unknown
@@ -233,6 +253,18 @@ class FieldExtractor:
             # Extract letter fields
             result.sender = self._extract_sender(text)
             result.subject = self._extract_subject(text)
+        
+        elif doc_type in ['birth_certificate', 'national_id', 'passport', 'driving_license']:
+            # Extract government ID fields
+            gov_fields = self._extract_government_id_fields(text, doc_type)
+            result.full_name = gov_fields.get('full_name')
+            result.date_of_birth = gov_fields.get('date_of_birth')
+            result.place_of_birth = gov_fields.get('place_of_birth')
+            result.id_number = gov_fields.get('id_number')
+            result.father_name = gov_fields.get('father_name')
+            result.mother_name = gov_fields.get('mother_name')
+            result.issuing_authority = gov_fields.get('issuing_authority')
+            result.identifiers = gov_fields.get('identifiers', {})
             
         else:
             # Unknown type - try to extract everything
@@ -249,6 +281,19 @@ class FieldExtractor:
     def _detect_document_type(self, text: str) -> str:
         """Detect the type of document based on keywords."""
         text_upper = text.upper()
+        
+        # Government ID Documents
+        if any(word in text_upper for word in ["BIRTH", "CERTIFICATE OF BIRTH", "BORN"]):
+            return "birth_certificate"
+            
+        if any(word in text_upper for word in ["NATIONAL ID", "IDENTITY CARD", "ID CARD"]):
+            return "national_id"
+            
+        if any(word in text_upper for word in ["PASSPORT", "TRAVEL DOCUMENT"]):
+            return "passport"
+            
+        if any(word in text_upper for word in ["DRIVING LICENCE", "DRIVER'S LICENSE", "DRIVING LICENSE"]):
+            return "driving_license"
         
         # Task 1 Rules
         if any(word in text_upper for word in ["RECEIPT", "TOTAL", "AMOUNT"]):
@@ -570,6 +615,128 @@ class FieldExtractor:
         if match:
             return match.group(1).strip()
         return None
+
+    def _extract_government_id_fields(self, text: str, doc_type: str) -> dict[str, Any]:
+        """
+        Extract fields from government ID documents.
+        
+        Handles: birth_certificate, national_id, passport, driving_license
+        """
+        fields: dict[str, Any] = {}
+        identifiers: dict[str, str] = {}
+        
+        # Clean text for better matching
+        text_clean = text.replace('\n', ' ').replace('  ', ' ')
+        lines = text.split('\n')
+        
+        # Extract Name - look for common patterns
+        name_patterns = [
+            r'(?:NAME|FULL\s*NAME|NAME\s*OF\s*CHILD|NAMES?)\s*[:.]?\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)+)',
+            r'(?:^|\n)\s*([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*(?:\n|$)',  # Name on its own line
+        ]
+        
+        for pattern in name_patterns:
+            match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+            if match:
+                name = match.group(1).strip()
+                # Validate - should have 2+ words, not be a keyword
+                if len(name.split()) >= 2 and not any(kw in name.upper() for kw in ['REPUBLIC', 'KENYA', 'CERTIFICATE', 'BIRTH']):
+                    fields['full_name'] = name.title()
+                    break
+        
+        # Also try to find name near specific keywords in birth certificates
+        if not fields.get('full_name') and doc_type == 'birth_certificate':
+            # Look for ID number pattern like "16700087725 Peter Njaroge"
+            match = re.search(r'(\d{8,12})\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)', text)
+            if match:
+                identifiers['entry_number'] = match.group(1)
+                fields['full_name'] = match.group(2).title()
+        
+        # Extract Date of Birth
+        dob_patterns = [
+            r'(?:DATE\s*OF\s*BIRTH|BORN\s*ON|D\.?O\.?B\.?|BIRTH\s*DATE)\s*[:.]?\s*(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})',
+            r'(?:BORN)\s+(?:ON\s+)?(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})',
+        ]
+        
+        for pattern in dob_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                fields['date_of_birth'] = match.group(1)
+                break
+        
+        # Extract Place of Birth
+        place_patterns = [
+            r'(?:PLACE\s*OF\s*BIRTH|BORN\s*(?:AT|IN)|DISTRICT)\s*[:.]?\s*([A-Za-z][A-Za-z\s]+?)(?:\n|,|\.)',
+            r'(?:DISTRICT|SUB-?COUNTY|LOCATION)\s*[:.]?\s*([A-Za-z][A-Za-z\s]+?)(?:\n|,|\.)',
+        ]
+        
+        for pattern in place_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                place = match.group(1).strip()
+                if len(place) > 2:
+                    fields['place_of_birth'] = place.title()
+                    break
+        
+        # Extract ID/Certificate Number
+        id_patterns = [
+            r'(?:CERTIFICATE\s*NO|CERT\.?\s*NO|ID\s*NO|ENTRY\s*NO|NO\.?)\s*[:.]?\s*([A-Z0-9/-]+)',
+            r'(?:^|\s)(\d{6,12})(?:\s|$)',  # Long number that could be ID
+        ]
+        
+        for pattern in id_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                id_num = match.group(1).strip()
+                if len(id_num) >= 5:
+                    fields['id_number'] = id_num
+                    identifiers['certificate_number'] = id_num
+                    break
+        
+        # Extract Father's Name
+        father_patterns = [
+            r'(?:FATHER|NAME\s*OF\s*FATHER|FATHER\'?S?\s*NAME)\s*[:.]?\s*([A-Za-z][A-Za-z\s]+?)(?:\n|,|\.)',
+        ]
+        
+        for pattern in father_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                if len(name) > 2:
+                    fields['father_name'] = name.title()
+                    break
+        
+        # Extract Mother's Name
+        mother_patterns = [
+            r'(?:MOTHER|NAME\s*OF\s*MOTHER|MOTHER\'?S?\s*NAME|MAIDEN\s*NAME)\s*[:.]?\s*([A-Za-z][A-Za-z\s]+?)(?:\n|,|\.)',
+        ]
+        
+        for pattern in mother_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                if len(name) > 2:
+                    fields['mother_name'] = name.title()
+                    break
+        
+        # Extract Issuing Authority
+        authority_patterns = [
+            r'(?:REPUBLIC\s*OF\s*KENYA)',
+            r'(?:DIRECTOR\s*OF\s*CIVIL\s*REGISTRATION)',
+            r'(?:REGISTRAR)',
+        ]
+        
+        for pattern in authority_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                fields['issuing_authority'] = "Republic of Kenya - Civil Registration"
+                break
+        
+        fields['identifiers'] = identifiers
+        
+        self.notes.append(f"Extracted {len([v for v in fields.values() if v])} fields from {doc_type}")
+        
+        return fields
+
 
 def extract_fields(text: str) -> ExtractionResult:
     """

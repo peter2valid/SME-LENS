@@ -4,10 +4,10 @@
  * Shows an animated countdown and processing animation
  * inside the scan box after capturing/uploading a photo.
  */
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Scan, FileCheck, Sparkles } from 'lucide-react';
-import CountUp from './CountUp';
+import { useState, useEffect, useRef } from 'react';
+// eslint-disable-next-line no-unused-vars
+import { AnimatePresence, motion } from 'framer-motion';
+import { FileCheck, Sparkles } from 'lucide-react';
 
 export default function ProcessingOverlay({
   isVisible,
@@ -17,33 +17,49 @@ export default function ProcessingOverlay({
 }) {
   const [phase, setPhase] = useState('countdown'); // 'countdown' | 'processing' | 'complete'
   const [currentNumber, setCurrentNumber] = useState(countFrom);
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
-    if (isVisible) {
+    // Clear any existing timeouts when effect runs
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
+    if (!isVisible) return;
+    
+    let count = countFrom;
+    
+    const tick = () => {
+      if (count <= 0) {
+        setPhase('processing');
+        timeoutRef.current = setTimeout(() => {
+          setPhase('complete');
+          timeoutRef.current = setTimeout(() => {
+            if (onComplete) onComplete();
+          }, 800);
+        }, 2000);
+        return;
+      }
+      
+      setCurrentNumber(count);
+      count -= 1;
+      timeoutRef.current = setTimeout(tick, 900);
+    };
+    
+    // Initialize and start - use setTimeout to defer setState
+    timeoutRef.current = setTimeout(() => {
       setPhase('countdown');
       setCurrentNumber(countFrom);
-      runCountdown(countFrom);
-    }
-  }, [isVisible]);
-
-  const runCountdown = (num) => {
-    if (num <= 0) {
-      setPhase('processing');
-      // Simulate processing time
-      setTimeout(() => {
-        setPhase('complete');
-        setTimeout(() => {
-          if (onComplete) onComplete();
-        }, 800);
-      }, 2000);
-      return;
-    }
-
-    setCurrentNumber(num);
-    setTimeout(() => {
-      runCountdown(num - 1);
-    }, 900);
-  };
+      tick();
+    }, 10);
+    
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [isVisible, countFrom, onComplete]);
 
   if (!isVisible) return null;
 

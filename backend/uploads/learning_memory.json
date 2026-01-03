@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-01-02T22:24:41.374889",
+  "entries": {
+    "f4070938b90ae7fc": {
+      "fingerprint": {
+        "line_count": 21,
+        "header_keywords": [
+          "rtificate"
+        ],
+        "footer_keywords": [
+          "seal",
+          "oven",
+          "cuter",
+          "divacter",
+          "civil",
+          "ragiewetien",
+          "ctieicae",
+          "inswed",
+          "purvunace",
+          "dirt"
+        ],
+        "has_table": false,
+        "approximate_word_count": 178,
+        "document_type": "form",
+        "vendor_name": "RTIFICATE O|",
+        "currency": "GBP",
+        "fingerprint_hash": "f4070938b90ae7fc"
+      },
+      "field_positions": [],
+      "corrections": [],
+      "vendor_rules": [],
+      "times_seen": 2,
+      "times_confirmed": 0,
+      "last_seen": "2026-01-02T21:21:40.227226",
+      "first_seen": "2026-01-02T21:21:23.318471"
+    },
+    "8cb10e11deeb287e": {
+      "fingerprint": {
+        "line_count": 12,
+        "header_keywords": [],
+        "footer_keywords": [
+          "pola"
+        ],
+        "has_table": false,
+        "approximate_word_count": 56,
+        "document_type": "unknown",
+        "vendor_name": "Can : ~ , : . : x",
+        "currency": "KES",
+        "fingerprint_hash": "8cb10e11deeb287e"
+      },
+      "field_positions": [],
+      "corrections": [],
+      "vendor_rules": [],
+      "times_seen": 1,
+      "times_confirmed": 0,
+      "last_seen": "2026-01-02T22:24:41.374436",
+      "first_seen": "2026-01-02T22:24:41.374482"
+    }
+  }
+}

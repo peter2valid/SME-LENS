@@ -14,7 +14,10 @@ const Dashboard = () => {
                 const res = await api.get('/upload/');
                 const docs = res.data;
                 const totalAmount = docs.reduce((sum, doc) => {
-                    const amount = doc.ocr_result?.extracted_data?.total || 0;
+                    // Support both enterprise (total_amount) and legacy (total) format
+                    const amount = doc.ocr_result?.extracted_data?.total_amount 
+                        || doc.ocr_result?.extracted_data?.total 
+                        || 0;
                     return sum + parseFloat(amount);
                 }, 0);
 
@@ -116,8 +119,11 @@ const Dashboard = () => {
                         ) : (
                             stats.recentDocs.map((doc) => {
                                 const vendor = doc.ocr_result?.extracted_data?.vendor || "Unknown";
-                                const total = doc.ocr_result?.extracted_data?.total
-                                    ? `$${doc.ocr_result.extracted_data.total.toFixed(2)}`
+                                // Support both enterprise (total_amount) and legacy (total) format
+                                const totalVal = doc.ocr_result?.extracted_data?.total_amount 
+                                    || doc.ocr_result?.extracted_data?.total;
+                                const total = totalVal
+                                    ? `$${parseFloat(totalVal).toFixed(2)}`
                                     : "N/A";
 
                                 return (
