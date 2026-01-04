@@ -19,6 +19,7 @@ import HistoryScreen from './src/screens/HistoryScreen';
 import DocumentDetailScreen from './src/screens/DocumentDetailScreen';
 import ResultScreen from './src/screens/ResultScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import WelcomeScreen from './src/screens/WelcomeScreen';
 
 // Theme
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -68,26 +69,26 @@ function TabNavigator() {
         },
       })}
     >
-      <Tab.Screen 
-        name="Scan" 
+      <Tab.Screen
+        name="Scan"
         component={ScannerScreen}
-        options={{ 
+        options={{
           title: 'Scan',
-          headerShown: false 
+          headerShown: false
         }}
       />
-      <Tab.Screen 
-        name="Dashboard" 
+      <Tab.Screen
+        name="Dashboard"
         component={DashboardScreen}
         options={{ title: 'Dashboard' }}
       />
-      <Tab.Screen 
-        name="History" 
+      <Tab.Screen
+        name="History"
         component={HistoryScreen}
         options={{ title: 'History' }}
       />
-      <Tab.Screen 
-        name="Settings" 
+      <Tab.Screen
+        name="Settings"
         component={SettingsScreen}
         options={{ title: 'Settings' }}
       />
@@ -112,23 +113,33 @@ function MainNavigator() {
         },
       }}
     >
-      <Stack.Screen 
-        name="Main" 
+      <Stack.Screen
+        name="Welcome"
+        component={WelcomeScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Main"
         component={TabNavigator}
         options={{ headerShown: false }}
       />
-      <Stack.Screen 
-        name="Result" 
+      <Stack.Screen
+        name="Scanner"
+        component={ScannerScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Result"
         component={ResultScreen}
-        options={{ 
+        options={{
           title: 'Scan Result',
           presentation: 'modal'
         }}
       />
-      <Stack.Screen 
-        name="DocumentDetail" 
+      <Stack.Screen
+        name="DocumentDetail"
         component={DocumentDetailScreen}
-        options={{ 
+        options={{
           title: 'Document Details',
           headerShown: false
         }}

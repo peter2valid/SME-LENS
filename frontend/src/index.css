@@ -176,31 +176,80 @@ body {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @keyframes scan-line {
-  0% { top: 0%; opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { top: 100%; opacity: 1; }
+  0% {
+    top: 0%;
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    top: 100%;
+    opacity: 1;
+  }
 }
 
 @keyframes pulse-border {
-  0%, 100% { border-color: var(--color-secondary); box-shadow: var(--shadow-glow-secondary); }
-  50% { border-color: var(--color-primary); box-shadow: var(--shadow-glow-primary); }
+
+  0%,
+  100% {
+    border-color: var(--color-secondary);
+    box-shadow: var(--shadow-glow-secondary);
+  }
+
+  50% {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-glow-primary);
+  }
 }
 
 @keyframes success-glow {
-  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-  70% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 12px rgba(34, 197, 94, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-  20%, 40%, 60%, 80% { transform: translateX(4px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
 }
 
 .animate-scan-line {
@@ -216,7 +265,7 @@ body {
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }

@@ -20,39 +20,39 @@ export const colors = {
     error: '#EF4444',
     warning: '#F59E0B',
     success: '#10B981',
-    
+
     // Glass effect colors
     glass: 'rgba(20, 26, 46, 0.8)',
     glassBorder: 'rgba(255, 255, 255, 0.1)',
-    
+
     // Gradient colors
     gradientStart: '#4F46E5',
     gradientEnd: '#8B5CF6',
   },
-  
-  // Light theme
+
+  // Stitch Light theme
   light: {
-    background: '#F8FAFC',
-    surface: '#FFFFFF',
-    surfaceHover: '#F1F5F9',
-    primary: '#4F46E5',
-    primaryHover: '#4338CA',
-    secondary: '#10B981',
-    accent: '#8B5CF6',
-    text: '#0F172A',
-    muted: '#64748B',
-    border: '#E2E8F0',
-    error: '#DC2626',
-    warning: '#D97706',
-    success: '#059669',
-    
+    background: '#FFFFFF',
+    surface: '#F1F3F4',
+    surfaceHover: '#E8EAED',
+    primary: '#1A73E8', // Google Blue
+    primaryHover: '#1557B0',
+    secondary: '#E8F0FE', // Light Blue for backgrounds
+    accent: '#1A73E8',
+    text: '#202124',
+    muted: '#5F6368',
+    border: '#DADCE0',
+    error: '#D93025',
+    warning: '#F9AB00',
+    success: '#1E8E3E',
+
     // Glass effect colors
-    glass: 'rgba(255, 255, 255, 0.9)',
-    glassBorder: 'rgba(0, 0, 0, 0.1)',
-    
+    glass: 'rgba(255, 255, 255, 0.95)',
+    glassBorder: 'rgba(0, 0, 0, 0.05)',
+
     // Gradient colors
-    gradientStart: '#4F46E5',
-    gradientEnd: '#8B5CF6',
+    gradientStart: '#1A73E8',
+    gradientEnd: '#4285F4',
   },
 };
 
