@@ -4,9 +4,12 @@
  * 
  * Creates a 3D folder that opens on hover with smooth animations
  */
+
 import { useState } from 'react';
 import './Folder.css';
 
+
+// Folder component: Animated 3D folder with hover effect
 export default function Folder({ 
   color = '#4F46E5', 
   size = 1, 
@@ -15,12 +18,15 @@ export default function Folder({
   onClick,
   className = ''
 }) {
+  // --- State ---
   const [isOpen, setIsOpen] = useState(false);
 
+  // --- Handlers ---
   const handleClick = () => {
     if (onClick) onClick();
   };
 
+  // --- Render ---
   return (
     <div 
       className={`folder-wrapper ${className}`}
@@ -29,14 +35,15 @@ export default function Folder({
       onMouseLeave={() => setIsOpen(false)}
       style={{ '--folder-size': size }}
     >
+      {/* Folder 3D structure */}
       <div className={`folder ${isOpen ? 'open' : ''}`}>
-        {/* Folder Back */}
+        {/* Back of folder */}
         <div 
           className="folder-back"
           style={{ backgroundColor: color }}
         />
-        
-        {/* Papers/Items inside */}
+
+        {/* Papers/items inside folder */}
         <div className="folder-papers">
           {items.slice(0, 3).map((item, i) => (
             <div 
@@ -53,8 +60,8 @@ export default function Folder({
             </div>
           ))}
         </div>
-        
-        {/* Folder Front */}
+
+        {/* Front of folder */}
         <div 
           className="folder-front"
           style={{ backgroundColor: color }}
@@ -62,10 +69,10 @@ export default function Folder({
           <div className="folder-tab" style={{ backgroundColor: color }} />
         </div>
       </div>
-      
-      {/* Label */}
+
+      {/* Folder label */}
       <span className="folder-label">{label}</span>
-      
+
       {/* Item count badge */}
       {items.length > 0 && (
         <span className="folder-badge">{items.length}</span>
